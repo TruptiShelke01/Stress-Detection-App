@@ -1,30 +1,42 @@
 import streamlit as st
-import pickle
+import joblib
 import os
 
-# Check if model and vectorizer files exist
-if os.path.exists("model.pkl") and os.path.exists("vectorizer.pkl"):
-    # Load model and vectorizer
-    model = pickle.load(open("model.pkl", "rb"))
-    vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
-else:
-    st.error("Error: Model or Vectorizer file not found. Please upload the required files.")
-    st.stop()  # Stops the execution of the app if files are not found
-
 # Title
+st.set_page_config(page_title="Stress Detection", page_icon="🧠")
 st.title("🧠 Stress Detection App")
 
-# Input
+# Paths to model and vectorizer
+MODEL_PATH = "model.pkl"
+VECTORIZER_PATH = "vectorizer.pkl"
+
+# Load model and vectorizer safely
+try:
+    if os.path.exists(MODEL_PATH) and os.path.exists(VECTORIZER_PATH):
+        model = joblib.load(MODEL_PATH)
+        vectorizer = joblib.load(VECTORIZER_PATH)
+    else:
+        st.error("❌ Required files not found. Please upload 'model.pkl' and 'vectorizer.pkl'.")
+        st.stop()
+except Exception as e:
+    st.error(f"⚠️ Error loading model/vectorizer: {e}")
+    st.stop()
+
+# Text input
 user_input = st.text_area("Enter a sentence to analyze stress level:")
 
+# Predict button
 if st.button("Predict"):
     if not user_input.strip():
         st.warning("Please enter some text.")
     else:
-        input_vec = vectorizer.transform([user_input])
-        prediction = model.predict(input_vec)[0]
+        try:
+            input_vector = vectorizer.transform([user_input])
+            prediction = model.predict(input_vector)[0]
 
-        if prediction == 1:
-            st.error("Prediction: Stressed 😥")
-        else:
-            st.success("Prediction: Not Stressed 😌")
+            if prediction == 1:
+                st.error("Prediction: Stressed 😥")
+            else:
+                st.success("Prediction: Not Stressed 😌")
+        except Exception as e:
+            st.error(f"Prediction failed: {e}")
